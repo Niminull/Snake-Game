@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- styles -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@5.0.16/dark.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        } *::before,
+        *::after {
+            display: inline-block;
+            font: normal normal normal 14px/1 FontAwesome;
+            font-size: inherit;
+            text-rendering: auto;
+            -webkit-font-smoothing: antialiased;
+        } :root {
+            font-size: 62.5%;
+        } body {
+            font-family:
+                system-ui,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                Roboto,
+                Oxygen,
+                Ubuntu,
+                Cantarell,
+                "Open Sans",
+                "Helvetica Neue",
+                sans-serif;
+            width: 100%;
+            height: 100vh;
+            background: #111111;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        } #wrapper {
+            top: 0;
+            left: 0;
+            position: fixed;
+            width: 100vw;
+            height: 100vh;
+            z-index: 99999;
+            opacity: 0;
+            visibility: hidden;
+            background: #11111177;
+            transition: 200ms;
+        } #wrapper.active {
+            opacity: 1;
+            visibility: visible;
+        } canvas {
+            margin: 0 auto;
+            padding: 0;
+        } a,
+        button {
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent !important;
+        } .controller {
+            margin: 0 auto;
+            display: none;
+            padding: 24px 0 0;
+            grid-gap: 12px;
+            grid-template-rows: repeat(4, 1fr);
+            grid-template-columns: repeat(3, 1fr);
+        } .controller__btn {
+            color: #00ffff;
+            width: 56px;
+            height: 56px;
+            border: 1px solid #00ffff;
+            outline: none;
+            font-size: 32px;
+            background: none;
+            transition: 0.1s;
+            border-radius: 4px;
+        } .controller__btn:focus {
+            color: #fff;
+            background: #00ffff;
+        }
+
+        /* preloader */
+
+        .preload {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            color: #ffffff;
+            width: 100vw;
+            height: 125vh;
+            margin: 0;
+            padding: 0;
+            z-index: 9999;
+            font-size: 8vh;
+            background: #111111;
+            transition: 0.5s;
+            letter-spacing: 0.8rem;
+        } .preload.loaded {
+            opacity: 0;
+            visibility: hidden;
+        } .preload span {
+            height: 50vh;
+            opacity: 0;
+            display: inline-block;
+            transform: rotateX(-90deg);
+            text-align: center;
+            text-transform: uppercase;
+        } .let {
+            animation: drop 3s ease-in-out infinite;
+        } .let1 {
+            animation-delay: 1.2s;
+        } .let2 {
+            animation-delay: 1.3s;
+        } .let3 {
+            animation-delay: 1.4s;
+        } .let4 {
+            animation-delay: 1.5s;
+        } .let5 {
+            animation-delay: 1.6s;
+        } .let6 {
+            animation-delay: 1.7s;
+        } .let7 {
+            animation-delay: 1.8s;
+        } .preload.loaded span {
+            animation: none;
+        } @keyframes drop {
+            10% {
+                opacity: 0.5;
+            } 20% {
+                opacity: 1;
+                top: 3.78rem;
+                transform: rotateX(-360deg);
+            } 80% {
+                opacity: 1;
+                top: 3.78rem;
+                transform: rotateX(-360deg);
+            } 90% {
+                opacity: 0.5;
+            } 100% {
+                opacity: 0;
+                top: 6.94rem;
+            }
+        }
+
+        /* preload end */
+
+        @media (max-width: 767.98px) {
+            body {
+                width: 100vw;
+                height: 100vh;
+                overflow: hidden;
+            } .controller {
+                display: grid;
+            } canvas {
+                height: auto;
+                max-height: 100vh;
+                border-top: 1px solid #fff4;
+                border-bottom: 1px solid #fff4;
+            }
+        }
+    </style>
+
+    <title>Snake Game</title>
+</head>
+<body>
+    <!-- preloader -->
+    <div class="preload">
+        <span class="let let1">l</span>  
+        <span class="let let2">o</span>  
+        <span class="let let3">a</span>  
+        <span class="let let4">d</span>  
+        <span class="let let5">i</span>  
+        <span class="let let6">n</span>  
+        <span class="let let7">g</span>  
+    </div>
+
+    <div id="wrapper"></div>
+    <div class="controller">
+        <br />
+        <button type="button" class="controller__btn" data-controller="Up">
+            <i class="fa fa-angle-up"></i>
+        </button>
+        <br />
+        <button type="button" class="controller__btn" data-controller="Left">
+            <i class="fa fa-angle-left"></i>
+        </button>
+        <br />
+        <button type="button" class="controller__btn" data-controller="Right">
+            <i class="fa fa-angle-right"></i>
+        </button>
+        <br />
+        <button type="button" class="controller__btn" data-controller="Down">
+            <i class="fa fa-angle-down"></i>
+        </button>
+        <br />
+    </div>
+
+    <canvas id="canvas"> Your browser doesn't support canvas element </canvas>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.10.4/sweetalert2.min.js" integrity="sha512-AXRSg1bk/WYB9XiMgxJJS+jsAuMyS46bL0NZUo0tc2luqTAtDC3zI7UumzsQvFR07j+h2hG37FD9s8RcHTBApA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+
+        function main() {
+
+            // on hand variables
+            const w  = window
+            const wW = w.innerWidth
+            const wH = h.innerHeight
+            const scale = 50
+            const canvas = document.querySelector("#canvas")
+
+            const random = (min, max) => Math.floor( Math.random() * (++max - min) + min )
+
+            const configs = {
+                init: () => {
+                    
+                }, 
+                start: () => {
+                    
+                }, 
+                process: () => {
+
+                }, 
+                pause: () => {
+                    
+                }, 
+                end: () => {
+                    
+                }, 
+                restart: () => {
+                    
+                }, 
+                save: () => {
+
+                }, 
+                load: () => {
+
+                }
+            }
+
+        } main()
+
+        class Screen {
+            constructor (canvas, controller, scale, fps) {
+                this.canvas = canvas
+                this.controller = controller
+                this.scale  = scale
+                this.ctx;
+                this.rows;
+                this.columns;
+            }
+
+            init = () => {
+                let width = 0, height = 0
+                width = window.innerWidth - window.innerWidth % scale
+                height = window.innerHeight - window.innerHeight % scale
+                ctx = this.canvas.getContext('2d')
+                ctx.lineWidth = 2
+
+                if (window.innerWidth < 767.98) 
+                    height = window.height - this.controller.offsetHeight - (window.height - this.controller.offsetHeight) % scale
+
+                this.canvas.width = width
+                this.canvas.height = height
+
+                this.columns = this.canvas.width / this.scale
+                this.rows = this.canvas.height / this.scale
+            }
+
+            resize = () => init()
+
+            drawGridLines = (width, color) => {
+                const w = width ? width: 2
+                const drawColumns = (start, end) => 
+                    ctx.fillRect( 0, start - w / 2, this.canvas.width, w) || ( start < end && drawColumns( start+scale, end ) )
+                const drawRows = (start, end) => 
+                    ctx.fillRect( start - w / 2, 0, w, this.canvas.height) || ( start < end && drawRows( start+scale, end ) )
+
+                this.ctx.fillStyle = color ? color: '#010101'
+                drawColumns(0, this.canvas.width)
+                drawRows(0, this.canvas.height)
+            }
+
+            clear = () => this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+
+        }
+
+        class Snake {
+            constructor (name, color, gap, width, height) {
+                this.gap    = gap
+                this.name   = name
+                this.color  = color
+                this.width  = width
+                this.height = height
+
+                this.body   = [
+                    {x: 0, y: 0}
+                ]
+            }
+
+            born = () => console.log(`${this.name} just born :)`)
+            draw = () => console.log(`${this.name} was drawn`)
+            moveTo = (x, y) => console.log(`${this.name} just 1.decided where to go and 2.started moving to (${x}, ${y}) 3.till arrive`)
+            isIllegalMove = () => console.log(`${this.name} is not allowed to move that direction`)
+            move = (direction) => console.log(`${this.name} 1.moved to ${direction} direction and will 2.draw in each step`)
+            feed = () => console.log(`${this.name} was 1.fed and 2.grown`)
+            grow = () => console.log(`${this.name} grew`)
+            bitItself = () => console.log(`${this.name} bit itself!`)
+            died = () => console.log(`${this.name} just passed away :(`)
+            reborn = () => console.log(`${this.name} just reborn and came back to life :))`)
+
+        }
+
+        class Food {
+            constructor (color, outline, width, height) {
+                this.color = color
+                this.outline = outline
+                this.width = width
+                this.height = height
+            }
+        }
+
+        class Game {
+            constructor (configs) {
+                this.initHandler    = configs.init
+                this.startHandler   = configs.start
+                this.runHandler     = configs.process
+                this.pauseHandler   = configs.pause
+                this.restartHandler = configs.restart
+                this.endHandler     = configs.end
+                this.saveHandler    = configs.save
+                this.loadHandler    = configs.load
+            }
+
+            init    = () => this.initHandler()
+
+            start   = () => this.startHandler()
+
+            run     = () => this.runHandler()
+
+            pause   = () => this.pauseHandler()
+
+            restart = () => this.restartHandler()
+
+            isOver  = () => this.endHandler()
+
+            save  = () => this.saveHandler()
+
+            load  = () => this.loadHandler()
+
+        }
+
+    </script>
+<noscript> Your browser does not support JavaScript </noscript>
+</body>
+</html>
