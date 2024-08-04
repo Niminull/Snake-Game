@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- styles -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@5.0.16/dark.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        } *::before, *::after {
+            display: inline-block;
+            font: normal normal normal 14px/1 FontAwesome;
+            font-size: inherit;
+            text-rendering: auto;
+            -webkit-font-smoothing: antialiased;
+        } :root {
+            font-size: 62.5%;
+        } body {
+            font-family:
+                system-ui,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                Roboto,
+                Oxygen,
+                Ubuntu,
+                Cantarell,
+                "Open Sans",
+                "Helvetica Neue",
+                sans-serif;
+            width: 100%;
+            height: 100vh;
+            background: #111111;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        #wrapper {
+            top: 0;
+            left: 0;
+            position: fixed;
+            width: 100vw;
+            height: 100vh;
+            z-index: 99999;
+            opacity: 0;
+            visibility: hidden;
+            background: #11111177;
+            transition: 200ms;
+        } #wrapper.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        canvas {
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        a, button {
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent !important;
+        }
+        
+        .controller {
+            margin: 0 auto;
+            display: none;
+            padding: 24px 0 0;
+            grid-gap: 12px;
+            grid-template-rows: repeat(4, 1fr);
+            grid-template-columns: repeat(3, 1fr);
+        } .controller__btn {
+            color: #00ffff;
+            width: 56px;
+            height: 56px;
+            border: 1px solid #00ffff;
+            outline: none;
+            font-size: 32px;
+            background: none;
+            transition: 0.1s;
+            border-radius: 4px;
+        } .controller__btn:focus {
+            color: #fff;
+            background: #00ffff;
+        }
+
+
+        /* preloader */
+
+        .preload {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            color: #ffffff;
+            width: 100vw;
+            height: 125vh;
+            margin: 0;
+            padding: 0;
+            z-index: 9999;
+            font-size: 8vh;
+            background: #111111;
+            transition: 0.5s;
+            letter-spacing: 0.8rem;
+        } .preload.loaded {
+            opacity: 0;
+            visibility: hidden;
+        } .preload span {
+            height: 50vh;
+            opacity: 0;
+            display: inline-block;
+            transform: rotateX(-90deg);
+            text-align: center;
+            text-transform: uppercase;
+        } .let {
+            animation: drop 3s ease-in-out infinite;
+        } .let1 {
+            animation-delay: 1.2s;
+        } .let2 {
+            animation-delay: 1.3s;
+        } .let3 {
+            animation-delay: 1.4s;
+        } .let4 {
+            animation-delay: 1.5s;
+        } .let5 {
+            animation-delay: 1.6s;
+        } .let6 {
+            animation-delay: 1.7s;
+        } .let7 {
+            animation-delay: 1.8s;
+        } .preload.loaded span {
+            animation: none;
+        } @keyframes drop {
+            10% {
+                opacity: 0.5;
+            } 20% {
+                opacity: 1;
+                top: 3.78rem;
+                transform: rotateX(-360deg);
+            } 80% {
+                opacity: 1;
+                top: 3.78rem;
+                transform: rotateX(-360deg);
+            } 90% {
+                opacity: 0.5;
+            } 100% {
+                opacity: 0;
+                top: 6.94rem;
+            }
+        }
+
+        /* preload end */
+
+
+        @media (max-width: 767.98px) {
+            body {
+                width: 100vw;
+                height: 100vh;
+                overflow: hidden;
+            }
+            .controller {
+                display: grid;
+            }
+            canvas {
+                height: auto;
+                max-height: 100vh;
+                border-top: 1px solid #fff4;
+                border-bottom: 1px solid #fff4;
+            }
+        }
+    </style>
+
+    <title>Snake Game</title>
+</head>
+<body>
+    <!-- preloader -->
+    <div class="preload">
+        <span class="let let1">l</span>  
+        <span class="let let2">o</span>  
+        <span class="let let3">a</span>  
+        <span class="let let4">d</span>  
+        <span class="let let5">i</span>  
+        <span class="let let6">n</span>  
+        <span class="let let7">g</span>  
+    </div>
+    <script>
+        const preload = document.querySelector(".preload")
+        window.addEventListener('load', () => preload.classList.add('loaded'))
+    </script>
+
+    <div id="wrapper"></div>
+    <div class="controller">
+        <br />
+        <button type="button" class="controller__btn" data-controller="Up">
+            <i class="fa fa-angle-up"></i>
+        </button>
+        <br />
+        <button type="button" class="controller__btn" data-controller="Left">
+            <i class="fa fa-angle-left"></i>
+        </button>
+        <br />
+        <button type="button" class="controller__btn" data-controller="Right">
+            <i class="fa fa-angle-right"></i>
+        </button>
+        <br />
+        <button type="button" class="controller__btn" data-controller="Down">
+            <i class="fa fa-angle-down"></i>
+        </button>
+        <br />
+    </div>
+
+    <canvas id="canvas"> Your browser doesn't support canvas element </canvas>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.10.4/sweetalert2.min.js" integrity="sha512-AXRSg1bk/WYB9XiMgxJJS+jsAuMyS46bL0NZUo0tc2luqTAtDC3zI7UumzsQvFR07j+h2hG37FD9s8RcHTBApA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+
+        class Screen {
+            constructor (object) {
+                this.canvas     = object.canvas
+                this.controller = object.controllerElement
+                this.scale      = object.scale
+                this.fps        = object.fps
+                this.ctx;
+                this.rows;
+                this.columns;
+            }
+
+            init = () => {
+                let width = 0, height = 0
+                width = window.innerWidth - window.innerWidth % this.scale
+                height = window.innerHeight - window.innerHeight % this.scale
+                this.ctx = this.canvas.getContext('2d')
+                this.ctx.lineWidth = 2
+
+                if (window.innerWidth < 767.98) 
+                    height = window.height - this.controller.offsetHeight - (window.height - this.controller.offsetHeight) % scale
+
+                this.canvas.width = width
+                this.canvas.height = height
+
+                this.columns = this.canvas.width / this.scale
+                this.rows = this.canvas.height / this.scale
+            }
+
+            resize = () => this.init()
+
+            drawGridLines = (width, color) => {
+                const w = width ? width: 2
+                const drawColumns = (start, end) => 
+                    this.ctx.fillRect( start - w / 2, 0, w, this.canvas.height) || ( start < end && drawColumns( start+this.scale, end ) )
+                const drawRows = (start, end) => 
+                    this.ctx.fillRect( 0, start - w / 2, this.canvas.width, w) || ( start < end && drawRows( start+this.scale, end ) )
+
+                this.ctx.fillStyle = color ? color: '#010101'
+                drawColumns(0, this.canvas.width)
+                drawRows(0, this.canvas.height)
+            }
+
+            clear = () => this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+
+            getFPS = () => this.fps
+            getScale = () => this.scale
+            getCanvas = () => this.canvas
+            getRowsCount = () => this.rows
+            getColsCount = () => this.columns
+
+        }
+
+        class Snake {
+            constructor (object) {
+                const canvas = object.canvas
+                this.ctx    = canvas.getContext('2d')
+
+                this.gap    = object.gap
+                this.name   = object.name
+                this.color  = object.mainColor
+                this.width  = object.width
+                this.height = object.height
+                this.spiritColor = object.spiritColor
+
+                this.body   = [
+                    // Sample: {x, y, direction}
+                ]
+                this.cloneBody = []
+            }
+
+            spawn = (coordinates) => {
+                this.body.push({ x: coordinates.x, y: coordinates.y })
+            }
+
+            draw = (string) => {
+                if (string === 'snake') {
+                    this.ctx.fillStyle = this.color
+                    this.drawPart(this.body, 0, true)
+                } else if (string === 'path') {
+                    this.ctx.fillStyle = this.spiritColor
+                    this.drawPart(this.cloneBody, 0, false)
+                } else throw new Error('Invalid input, valid inputs are "snake" and "path"')
+            }
+
+            drawPart = (body, index, _gap) => {
+                const part = body[index++]
+                if (!part) return
+                const gap = _gap && index < 5 ? (this.gap * index)**1.05: _gap && index >= 5 ? (this.gap * 5)**1.05: this.gap
+                this.ctx.fillRect( part.x + gap/2, part.y + gap/2, this.width - gap, this.height - gap )
+                if (index < body.length)
+                    return this.drawPart(body, index, _gap)
+                return body
+            }
+
+            moveTo = (coordinates, screenWidth, screenHeight) => {
+                this.cloneBody.push(this.body[0])
+                this.choosePath(coordinates.x, coordinates.y, screenWidth, screenHeight)
+            }
+
+            // TODO: fix illegal moves at @choosePath function
+            choosePath = (x, y, screenWidth, screenHeight) => {
+                const head = this.cloneBody[0]
+                let newHead
+                let direction;
+
+                // Determine the direction to move
+                direction = 
+                    head.x < x ? 'right': 
+                    head.x > x ? 'left': 
+                    head.y < y ? 'down': 
+                    head.y > y ? 'up': 
+                    null
+
+                if (!direction) return
+
+                let otherDirections = ['right', 'left', 'down', 'up']
+                otherDirections.splice(otherDirections.indexOf(direction), 1)
+                if ( this.needToChangeDirection(head, direction) ) 
+                    direction = this.changeDirection( otherDirections )
+
+                // if (this.isIllegalDirection(direction)) {
+                //     let otherDirections = ['right', 'left', 'down', 'up']
+                //     otherDirections.splice(otherDirections.indexOf(direction), 1)
+                //     direction = otherDirections[0]
+                // }
+
+                switch (direction) {
+                    case 'right':
+                        newHead = { x: head.x + this.width, y: head.y, direction };
+                        break;
+                    case 'left':
+                        newHead = { x: head.x - this.width, y: head.y, direction };
+                        break;
+                    case 'down':
+                        newHead = { x: head.x, y: head.y + this.height, direction };
+                        break;
+                    case 'up':
+                        newHead = { x: head.x, y: head.y - this.height, direction };
+                        break;
+                    default:
+                        return;
+                }
+
+                newHead = this.reEnter(newHead, screenWidth, screenHeight)
+                
+                this.cloneBody.unshift(newHead)
+                this.choosePath(x, y)
+
+            }
+
+            reEnter = (bodyPart, screenWidth, screenHeight) => {
+                if (bodyPart.x > screenWidth - this.width) bodyPart.x = 0
+                else if (bodyPart.x < 0) bodyPart.x = screenWidth - this.width
+                else if (bodyPart.y > screenHeight - this.height) bodyPart.y = 0
+                else if (bodyPart.y < 0) bodyPart.y = screenHeight - this.height
+                return bodyPart
+            }
+
+            takeStep = () => {
+                const newHead = this.cloneBody[ this.cloneBody.length-1 ]
+                if (!newHead) return
+                this.move(newHead)
+                this.cloneBody.pop()
+            }
+
+            move = (newHead) => this.body = this.body.map((currentPart, index, array) => index ? array[ index - 1 ]: newHead)
+
+            hasGetFood = (coordinates) => {
+                const head = this.body[0]
+                if (head.x !== coordinates.x || head.y !== coordinates.y) return false
+                return true
+            }
+
+            grow = (screenWidth, screenHeight) => {
+                const lastPart = this.body[this.body.length - 1]
+                let newPart
+                switch (lastPart.direction) {
+                    case 'right': { newPart = { x: lastPart.x - this.width, y: lastPart.y, direction: lastPart.direction } }
+                        break
+                    case 'left': { newPart  = { x: lastPart.x + this.width, y: lastPart.y, direction: lastPart.direction } }
+                        break
+                    case 'up': { newPart    = { x: lastPart.x, y: lastPart.y + this.height, direction: lastPart.direction } }
+                        break
+                    case 'down': { newPart  = { x: lastPart.x, y: lastPart.y - this.height, direction: lastPart.direction } }
+                        break
+                    default:
+                        return
+                }
+                newPart = this.reEnter(newPart, screenWidth, screenHeight)
+                this.body.push(newPart)
+            }
+
+            bitItself = () => {
+                return false
+            }
+
+            died = () => console.log(`${this.name} just passed away :(`)
+
+            respawn = () => console.log(`${this.name} just respawn and came back to life :))`)
+
+            needToChangeDirection = (direction) => this.isIllegalDirection(direction) || this.isBadDirection(direction)
+
+            isIllegalDirection = (direction) => {
+                const head = this.cloneBody[0]
+                if      ( direction === 'right' && head.direction === 'left' ) return true
+                else if ( direction === 'left' && head.direction === 'right' ) return true
+                else if ( direction === 'up' && head.direction === 'down' ) return true
+                else if ( direction === 'down' && head.direction === 'up' ) return true
+                return false
+            }
+
+            isBadDirection = (head, direction) => {
+                let frontPart
+                switch (direction) {
+                    case 'right':
+                        { frontPart = this.cloneBody.find(part => head.x + this.width === part.x && head.y === part.y) }
+                        break;
+                    case 'left':
+                        { frontPart = this.cloneBody.find(part => head.x - this.width === part.x && head.y === part.y) }
+                        break;
+                    case 'up':
+                        { frontPart = this.cloneBody.find(part => head.x === part.x && head.y - this.height === part.y) }
+                        break;
+                    case 'down':
+                        { frontPart = this.cloneBody.find(part => head.x === part.x && head.y + this.height === part.y) }
+                        break;
+                    default:
+                        return
+                }
+                if (frontPart) return true
+                return false
+            }
+
+            changeDirection = (directions, i) => {
+                if ( isIllegalDirection(directions[i]) && i < directions.length-1 )
+                    return changeDirection(directions, i+1)
+                return directions[i]
+            }
+
+            getBody = () => this.body
+
+        }
+
+        class Food {
+            constructor (object) {
+                const canvas = object.canvas
+                this.ctx = canvas.getContext('2d')
+
+                this.color = object.color
+                this.outline = object.outline
+                this.width = object.width
+                this.height = object.height
+                this.coordinates = {x: null, y: null}
+            }
+
+            spawn = (coordinates) => this.coordinates = { x: coordinates.x, y: coordinates.y }
+
+            // A little chance for bigger food before respawn
+            respawn = (x, y) => this.spawn(x, y)
+
+            draw = () => {                
+                this.ctx.fillStyle = this.color
+                this.ctx.fillRect(
+                    this.coordinates.x + this.outline/2, 
+                    this.coordinates.y + this.outline/2, 
+                    this.width - this.outline, 
+                    this.height - this.outline
+                )
+            }
+
+            getCoordinates = () => this.coordinates
+
+        }
+
+        class Game {
+            constructor (configs) {
+                this.initHandler    = configs.init
+                this.startHandler   = configs.start
+                this.runHandler     = configs.process
+                this.pauseHandler   = configs.pause
+                this.restartHandler = configs.restart
+                this.endHandler     = configs.end
+                this.saveHandler    = configs.save
+                this.loadHandler    = configs.load
+            }
+
+            init    = () => this.initHandler()
+            start   = () => this.startHandler()
+            run     = () => this.runHandler()
+            pause   = () => this.pauseHandler()
+            restart = () => this.restartHandler()
+            isOver  = () => this.endHandler()
+            save    = () => this.saveHandler()
+            load    = () => this.loadHandler()
+
+        }
+
+        function main() {
+
+            // define variables
+            const scale = 50
+            const canvas = document.querySelector('#canvas')
+            const controllerElem = document.querySelector('#controller')
+            const random = (min, max, invalidNumbers) => {
+                const randomNumber = Math.floor( Math.random() * (max+1 - min) + min )
+                return invalidNumbers && invalidNumbers.includes(randomNumber) ? random(min, max, invalidNumbers): randomNumber
+            }
+            const randomCoordinates = (array) => {
+                const x = random(0, screen.getColsCount() - 1)
+                const y = random(0, screen.getRowsCount() - 1)
+                if ( array.some(i => i.x / scale === x && i.y / scale === y) )
+                    return randomCoordinates(array)
+                return { x: x * scale, y: y * scale }
+            }
+
+            const screen = new Screen({ canvas, controllerElem, scale, fps: 10 })
+            window.addEventListener('resize', screen.resize)
+
+            // Snake game
+            const snake = new Snake({
+                name: '\'Midgard Serpent\'', 
+                canvas, 
+                gap: 2, 
+                width: scale, 
+                height: scale, 
+                mainColor: '#FF7700', 
+                spiritColor: '#0077FF44'
+            })
+
+            const food = new Food({
+                canvas, 
+                color: '#F7F7F7', 
+                outline: 15, 
+                width: scale, 
+                height: scale
+            })
+
+            let processInterval;
+            const configs = {
+                init: () => {
+
+                    screen.init()
+                    screen.clear()
+                    screen.drawGridLines()
+
+                }, 
+                start: () => {
+                    // spawn snake
+                    snake.spawn(randomCoordinates( [] ))
+
+                    // spawn food
+                    food.spawn(randomCoordinates( snake.getBody() ))
+
+                    // snake start moving to get the food
+                    snake.moveTo(
+                        food.getCoordinates(), screen.getColsCount() * screen.getScale(), screen.getRowsCount() * screen.getScale()
+                    )
+                }, 
+                process: () => processInterval = setInterval(() => {
+
+                    screen.clear()
+                    screen.drawGridLines()
+
+                    if ( snake.bitItself() ) {
+                        this.end()
+                    }
+
+                    if ( snake.hasGetFood(food.getCoordinates()) ) {
+
+                        food.respawn(randomCoordinates( snake.getBody() ))
+                        snake.moveTo( food.getCoordinates(), screen.getColsCount() * screen.getScale(), screen.getRowsCount() * screen.getScale() )
+                        snake.grow( screen.getColsCount() * screen.getScale(), screen.getRowsCount() * screen.getScale() )
+
+                    }
+
+                    // move snake
+                    snake.takeStep()
+
+                    // 1. draw snake's path
+                    snake.draw('path')
+                    // 2. draw snake
+                    snake.draw('snake')
+                    // 3. draw food
+                    food.draw()
+                }, (1000 / screen.getFPS()) ), 
+                pause: () => {
+                    
+                }, 
+                end: () => {
+                    
+                }, 
+                restart: () => {
+                    
+                }, 
+                save: () => {
+
+                }, 
+                load: () => {
+                    
+                }, 
+                // update: () => {}, 
+            }
+
+            // Game
+            const game = new Game(configs)
+            game.init()
+            game.start()
+            game.run()
+            
+            } main()
+
+    </script>
+<noscript> Your browser does not support JavaScript </noscript>
+</body>
+</html>
