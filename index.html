@@ -174,7 +174,6 @@
 
             constructor (object) {
                 this.canvas     = object.canvas
-                this.controller = object.controllerElement
                 this.scale      = object.scale
                 this.fps        = object.fps
                 this.ctx;
@@ -188,9 +187,6 @@
                 height = window.innerHeight - window.innerHeight % this.scale
                 this.ctx = this.canvas.getContext('2d')
                 this.ctx.lineWidth = 2
-
-                if (window.innerWidth < 767.98) 
-                    height = window.height - this.controller.offsetHeight - (window.height - this.controller.offsetHeight) % scale
 
                 this.canvas.width = width
                 this.canvas.height = height
