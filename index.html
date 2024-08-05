@@ -65,29 +65,6 @@
             cursor: pointer;
             -webkit-tap-highlight-color: transparent !important;
         }
-        
-        .controller {
-            margin: 0 auto;
-            display: none;
-            padding: 24px 0 0;
-            grid-gap: 12px;
-            grid-template-rows: repeat(4, 1fr);
-            grid-template-columns: repeat(3, 1fr);
-        } .controller__btn {
-            color: #00ffff;
-            width: 56px;
-            height: 56px;
-            border: 1px solid #00ffff;
-            outline: none;
-            font-size: 32px;
-            background: none;
-            transition: 0.1s;
-            border-radius: 4px;
-        } .controller__btn:focus {
-            color: #fff;
-            background: #00ffff;
-        }
-
 
         /* preloader */
 
@@ -164,9 +141,6 @@
                 height: 100vh;
                 overflow: hidden;
             }
-            .controller {
-                display: grid;
-            }
             canvas {
                 height: auto;
                 max-height: 100vh;
@@ -189,37 +163,15 @@
         <span class="let let6">n</span>  
         <span class="let let7">g</span>  
     </div>
-    <script>
-        const preload = document.querySelector(".preload")
-        window.addEventListener('load', () => preload.classList.add('loaded'))
-    </script>
+    <script> window.addEventListener('load', () => document.querySelector(".preload").classList.add('loaded')) </script>
 
     <div id="wrapper"></div>
-    <div class="controller">
-        <br />
-        <button type="button" class="controller__btn" data-controller="Up">
-            <i class="fa fa-angle-up"></i>
-        </button>
-        <br />
-        <button type="button" class="controller__btn" data-controller="Left">
-            <i class="fa fa-angle-left"></i>
-        </button>
-        <br />
-        <button type="button" class="controller__btn" data-controller="Right">
-            <i class="fa fa-angle-right"></i>
-        </button>
-        <br />
-        <button type="button" class="controller__btn" data-controller="Down">
-            <i class="fa fa-angle-down"></i>
-        </button>
-        <br />
-    </div>
-
     <canvas id="canvas"> Your browser doesn't support canvas element </canvas>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.10.4/sweetalert2.min.js" integrity="sha512-AXRSg1bk/WYB9XiMgxJJS+jsAuMyS46bL0NZUo0tc2luqTAtDC3zI7UumzsQvFR07j+h2hG37FD9s8RcHTBApA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
     <script>
 
         class Screen {
+
             constructor (object) {
                 this.canvas     = object.canvas
                 this.controller = object.controllerElement
@@ -271,22 +223,45 @@
 
         }
 
-        class Snake {
-            constructor (object) {
-                const canvas = object.canvas
-                this.ctx    = canvas.getContext('2d')
+        class Game {
+            constructor (configs) {
+                this.initHandler    = configs.init
+                this.startHandler   = configs.start
+                this.pauseHandler   = configs.pause
+                this.resumeHandler  = configs.resume
+                this.restartHandler = configs.restart
+                this.endHandler     = configs.end
+                this.saveHandler    = configs.save
+                this.loadHandler    = configs.load
+            }
 
+            init    = () => this.initHandler()
+            start   = () => this.startHandler()
+            pause   = () => this.pauseHandler()
+            resume  = () => this.resumeHandler()
+            restart = () => this.restartHandler()
+            isOver  = () => this.endHandler()
+            save    = () => this.saveHandler()
+            load    = () => this.loadHandler()
+
+        }
+        
+        class Snake {
+
+            constructor (object) {
+                this.canvasId = object.canvasId
+                const canvas = document.getElementById(this.canvasId)
+                this.ctx    = canvas.getContext('2d')
                 this.gap    = object.gap
-                this.name   = object.name
                 this.color  = object.mainColor
-                this.width  = object.width
-                this.height = object.height
                 this.spiritColor = object.spiritColor
 
-                this.body   = [
-                    // Sample: {x, y, direction}
-                ]
-                this.cloneBody = []
+                this.name   = object.name
+                this.width  = object.width
+                this.height = object.height
+
+                this.body   = object.body ? object.body: []
+                this.cloneBody = object.cloneBody ? object.cloneBody: []
             }
 
             spawn = (coordinates) => {
@@ -296,20 +271,30 @@
             draw = (string) => {
                 if (string === 'snake') {
                     this.ctx.fillStyle = this.color
-                    this.drawPart(this.body, 0, true)
+                    this.ctx.beginPath()
+                    this.drawPart(this.body, 0, 4, true)
                 } else if (string === 'path') {
                     this.ctx.fillStyle = this.spiritColor
-                    this.drawPart(this.cloneBody, 0, false)
+                    this.ctx.beginPath()
+                    this.drawPart(this.cloneBody, 0, 0, false)
                 } else throw new Error('Invalid input, valid inputs are "snake" and "path"')
+                this.ctx.fill()
             }
 
-            drawPart = (body, index, _gap) => {
+            drawPart = (body, index, roundness, _gap) => {
                 const part = body[index++]
                 if (!part) return
-                const gap = _gap && index < 5 ? (this.gap * index)**1.05: _gap && index >= 5 ? (this.gap * 5)**1.05: this.gap
-                this.ctx.fillRect( part.x + gap/2, part.y + gap/2, this.width - gap, this.height - gap )
+                const l = 4
+                const gap = _gap && index < l ? (this.gap * index)**1.05: _gap && index >= l ? (this.gap * 4)**1.05: this.gap
+                this.ctx.roundRect(
+                    part.x + gap/2, 
+                    part.y + gap/2, 
+                    this.width - gap, 
+                    this.height - gap, 
+                    roundness
+                )
                 if (index < body.length)
-                    return this.drawPart(body, index, _gap)
+                    return this.drawPart(body, index, roundness, _gap)
                 return body
             }
 
@@ -333,17 +318,6 @@
                     null
 
                 if (!direction) return
-
-                let otherDirections = ['right', 'left', 'down', 'up']
-                otherDirections.splice(otherDirections.indexOf(direction), 1)
-                if ( this.needToChangeDirection(head, direction) ) 
-                    direction = this.changeDirection( otherDirections )
-
-                // if (this.isIllegalDirection(direction)) {
-                //     let otherDirections = ['right', 'left', 'down', 'up']
-                //     otherDirections.splice(otherDirections.indexOf(direction), 1)
-                //     direction = otherDirections[0]
-                // }
 
                 switch (direction) {
                     case 'right':
@@ -386,10 +360,10 @@
 
             move = (newHead) => this.body = this.body.map((currentPart, index, array) => index ? array[ index - 1 ]: newHead)
 
-            hasGetFood = (coordinates) => {
+            hasGetFood = (foodCoordinates) => {
                 const head = this.body[0]
-                if (head.x !== coordinates.x || head.y !== coordinates.y) return false
-                return true
+                if (head.x === foodCoordinates.x && head.y === foodCoordinates.y) return true
+                return false
             }
 
             grow = (screenWidth, screenHeight) => {
@@ -411,108 +385,92 @@
                 this.body.push(newPart)
             }
 
-            bitItself = () => {
+            bitItself = () => this.bite(this.body, 2)
+
+            bite = (body, index) => {
+                const head = this.body[0]
+                const part = this.body[index]
+                if (!part) 
+                    return false
+                if (head.x === part.x && head.y === part.y) 
+                    return true
+                if (index+1 < body.length) 
+                    return this.bite(body, index+1)
                 return false
             }
 
-            died = () => console.log(`${this.name} just passed away :(`)
+            die = () => {}
 
-            respawn = () => console.log(`${this.name} just respawn and came back to life :))`)
-
-            needToChangeDirection = (direction) => this.isIllegalDirection(direction) || this.isBadDirection(direction)
-
-            isIllegalDirection = (direction) => {
-                const head = this.cloneBody[0]
-                if      ( direction === 'right' && head.direction === 'left' ) return true
-                else if ( direction === 'left' && head.direction === 'right' ) return true
-                else if ( direction === 'up' && head.direction === 'down' ) return true
-                else if ( direction === 'down' && head.direction === 'up' ) return true
-                return false
-            }
-
-            isBadDirection = (head, direction) => {
-                let frontPart
-                switch (direction) {
-                    case 'right':
-                        { frontPart = this.cloneBody.find(part => head.x + this.width === part.x && head.y === part.y) }
-                        break;
-                    case 'left':
-                        { frontPart = this.cloneBody.find(part => head.x - this.width === part.x && head.y === part.y) }
-                        break;
-                    case 'up':
-                        { frontPart = this.cloneBody.find(part => head.x === part.x && head.y - this.height === part.y) }
-                        break;
-                    case 'down':
-                        { frontPart = this.cloneBody.find(part => head.x === part.x && head.y + this.height === part.y) }
-                        break;
-                    default:
-                        return
-                }
-                if (frontPart) return true
-                return false
-            }
-
-            changeDirection = (directions, i) => {
-                if ( isIllegalDirection(directions[i]) && i < directions.length-1 )
-                    return changeDirection(directions, i+1)
-                return directions[i]
-            }
+            respawn = () => spawn()
 
             getBody = () => this.body
+
+            getInfo = () => ({
+                name: this.name, 
+                canvasId: this.canvasId, 
+                gap: this.gap, 
+                width: this.width, 
+                height: this.height, 
+                mainColor: this.color, 
+                spiritColor: this.spiritColor, 
+                body: this.body, 
+                cloneBody: this.cloneBody
+            })
 
         }
 
         class Food {
-            constructor (object) {
-                const canvas = object.canvas
-                this.ctx = canvas.getContext('2d')
 
+            constructor (object) {
+                const canvas = document.getElementById(object.canvasId)
+                this.canvasId = object.canvasId
+                this.ctx = canvas.getContext('2d')
                 this.color = object.color
                 this.outline = object.outline
+
                 this.width = object.width
                 this.height = object.height
-                this.coordinates = {x: null, y: null}
+
+                this.coordinates = {
+                    x: object.coordinates ? object.coordinates.x: null, 
+                    y: object.coordinates ? object.coordinates.y: null
+                }
+                
+                this.flag = true
             }
 
-            spawn = (coordinates) => this.coordinates = { x: coordinates.x, y: coordinates.y }
+            spawn = (coordinates) => {
+                this.coordinates = { x: coordinates.x, y: coordinates.y }
+                if (this.flag) 
+                    this.coordinates = { x: this.coordinates.x,  y: this.coordinates.y }
+                this.flag = false
+            }
 
-            // A little chance for bigger food before respawn
-            respawn = (x, y) => this.spawn(x, y)
+            respawn = (coordinates) => this.spawn(coordinates)
 
             draw = () => {                
                 this.ctx.fillStyle = this.color
-                this.ctx.fillRect(
+                this.ctx.beginPath()
+                this.ctx.roundRect(
                     this.coordinates.x + this.outline/2, 
                     this.coordinates.y + this.outline/2, 
                     this.width - this.outline, 
-                    this.height - this.outline
+                    this.height - this.outline, 
+                    this.width
                 )
+                this.ctx.fill()
             }
 
             getCoordinates = () => this.coordinates
 
-        }
-
-        class Game {
-            constructor (configs) {
-                this.initHandler    = configs.init
-                this.startHandler   = configs.start
-                this.runHandler     = configs.process
-                this.pauseHandler   = configs.pause
-                this.restartHandler = configs.restart
-                this.endHandler     = configs.end
-                this.saveHandler    = configs.save
-                this.loadHandler    = configs.load
-            }
-
-            init    = () => this.initHandler()
-            start   = () => this.startHandler()
-            run     = () => this.runHandler()
-            pause   = () => this.pauseHandler()
-            restart = () => this.restartHandler()
-            isOver  = () => this.endHandler()
-            save    = () => this.saveHandler()
-            load    = () => this.loadHandler()
+            getInfo = () => ({
+                canvasId: this.canvasId, 
+                color:  this.color, 
+                outline:this.outline, 
+                width:  this.width, 
+                height: this.height, 
+                coordinates: this.coordinates
+            })
 
         }
 
@@ -538,26 +496,25 @@
             window.addEventListener('resize', screen.resize)
 
             // Snake game
-            const snake = new Snake({
-                name: '\'Midgard Serpent\'', 
-                canvas, 
-                gap: 2, 
-                width: scale, 
-                height: scale, 
-                mainColor: '#FF7700', 
-                spiritColor: '#0077FF44'
-            })
-
-            const food = new Food({
-                canvas, 
-                color: '#F7F7F7', 
-                outline: 15, 
-                width: scale, 
-                height: scale
-            })
-
-            let processInterval;
             const configs = {
+                processInterval: setInterval(() => {}), 
+                snake: new Snake({
+                    name: '\'Midgard Serpent\'', 
+                    canvasId: canvas.id, 
+                    gap: 2, 
+                    width: scale, 
+                    height: scale, 
+                    mainColor: '#FF7700', 
+                    spiritColor: '#0077FF44'
+                }), 
+                food: new Food({
+                    canvasId: canvas.id, 
+                    color: '#F7F7F7', 
+                    outline: 15, 
+                    width: scale, 
+                    height: scale
+                }), 
+
                 init: () => {
 
                     screen.init()
@@ -565,69 +522,108 @@
                     screen.drawGridLines()
 
                 }, 
+
                 start: () => {
                     // spawn snake
-                    snake.spawn(randomCoordinates( [] ))
-
+                    configs.snake.spawn(randomCoordinates( [] ))
                     // spawn food
-                    food.spawn(randomCoordinates( snake.getBody() ))
-
+                    configs.food.spawn(randomCoordinates( configs.snake.getBody() ))
                     // snake start moving to get the food
-                    snake.moveTo(
-                        food.getCoordinates(), screen.getColsCount() * screen.getScale(), screen.getRowsCount() * screen.getScale()
+                    configs.snake.moveTo(
+                        configs.food.getCoordinates(), screen.getColsCount() * screen.getScale(), screen.getRowsCount() * screen.getScale()
                     )
+                    configs.process()
                 }, 
-                process: () => processInterval = setInterval(() => {
+
+                process: () => configs.processInterval = setInterval(() => {
 
                     screen.clear()
                     screen.drawGridLines()
 
-                    if ( snake.bitItself() ) {
-                        this.end()
+                    if ( configs.snake.bitItself() ) {
+                        configs.end()
                     }
 
-                    if ( snake.hasGetFood(food.getCoordinates()) ) {
+                    if ( configs.snake.hasGetFood(configs.food.getCoordinates()) ) {
 
-                        food.respawn(randomCoordinates( snake.getBody() ))
-                        snake.moveTo( food.getCoordinates(), screen.getColsCount() * screen.getScale(), screen.getRowsCount() * screen.getScale() )
-                        snake.grow( screen.getColsCount() * screen.getScale(), screen.getRowsCount() * screen.getScale() )
+                        configs.food.respawn(randomCoordinates( configs.snake.getBody() ))
+                        configs.snake.moveTo( configs.food.getCoordinates(), screen.getColsCount() * screen.getScale(), screen.getRowsCount() * screen.getScale() )
+                        configs.snake.grow( screen.getColsCount() * screen.getScale(), screen.getRowsCount() * screen.getScale() )
 
                     }
 
                     // move snake
-                    snake.takeStep()
+                    configs.snake.takeStep()
 
                     // 1. draw snake's path
-                    snake.draw('path')
-                    // 2. draw snake
-                    snake.draw('snake')
-                    // 3. draw food
-                    food.draw()
-                }, (1000 / screen.getFPS()) ), 
-                pause: () => {
-                    
-                }, 
-                end: () => {
-                    
-                }, 
-                restart: () => {
-                    
-                }, 
-                save: () => {
+                    configs.snake.draw('path')
+                    // 2. draw food
+                    configs.food.draw()
+                    // 3. draw snake
+                    configs.snake.draw('snake')
 
+                }, (1000 / screen.getFPS()) ), 
+                
+                end: () => {
+                    configs.snake.die()
                 }, 
+
+                pause: () => {
+                    clearInterval(configs.processInterval)
+                }, 
+
+                resume: () => {
+                    configs.process()
+                }, 
+
+                restart: () => {
+                    configs.pause()
+                    configs.init()
+                    configs.start()
+                }, 
+
+                save: () => {
+                    const snakeInfo = configs.snake.getInfo()
+                    const foodInfo = configs.food.getInfo()
+                    localStorage.setItem('snake-game', JSON.stringify({
+                        snake: snakeInfo, 
+                        food: foodInfo
+                    }))
+                }, 
+
                 load: () => {
-                    
+                    try {
+                        const info = JSON.parse( localStorage.getItem('snake-game') )
+                        if (!info) return
+                        // TODO: fix
+                        if ( 20 < info.snake.body.length ) {
+                            localStorage.removeItem('snake-game')
+                            return
+                        }
+
+                        configs.snake = new Snake(info.snake)
+                        configs.food = new Food(info.food)
+
+                    } catch (err) {
+                        localStorage.removeItem('snake-game')
+                        console.error(err)
+                    }
                 }, 
+
                 // update: () => {}, 
             }
 
-            // Game
+            // Game handling
             const game = new Game(configs)
+            game.load()
             game.init()
             game.start()
-            game.run()
-            
+            window.addEventListener('beforeunload', e => {
+                game.save()
+                e.preventDefault()
+                e.returnValue = ''
+            })
+
             } main()
 
     </script>
