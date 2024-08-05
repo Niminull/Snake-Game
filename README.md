@@ -1,2 +1,2 @@
 # Snake-Game
- Just a fun project
+ a mini project just for fun :)
