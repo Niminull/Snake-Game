@@ -474,8 +474,8 @@
 
             // define variables
             const scale = 50
+            const fps = 10
             const canvas = document.querySelector('#canvas')
-            const controllerElem = document.querySelector('#controller')
             const random = (min, max, invalidNumbers) => {
                 const randomNumber = Math.floor( Math.random() * (max+1 - min) + min )
                 return invalidNumbers && invalidNumbers.includes(randomNumber) ? random(min, max, invalidNumbers): randomNumber
@@ -488,7 +488,7 @@
                 return { x: x * scale, y: y * scale }
             }
 
-            const screen = new Screen({ canvas, controllerElem, scale, fps: 10 })
+            const screen = new Screen({ canvas, scale, fps })
             window.addEventListener('resize', screen.resize)
 
             // Snake game
@@ -614,6 +614,11 @@
             game.load()
             game.init()
             game.start()
+            // game.pause()
+            // game.resume()
+            // game.isOver()
+            // game.restart()
+
             window.addEventListener('beforeunload', e => {
                 game.save()
                 e.preventDefault()
