@@ -176,6 +176,8 @@
                 this.canvas     = object.canvas
                 this.scale      = object.scale
                 this.fps        = object.fps
+                this.width      = object.width || window.innerWidth
+                this.height     = object.height || window.innerHeight
                 this.ctx;
                 this.rows;
                 this.columns;
@@ -183,8 +185,8 @@
 
             init = () => {
                 let width = 0, height = 0
-                width = window.innerWidth - window.innerWidth % this.scale
-                height = window.innerHeight - window.innerHeight % this.scale
+                width = this.width - this.width % this.scale
+                height = this.height - this.height % this.scale
                 this.ctx = this.canvas.getContext('2d')
                 this.ctx.lineWidth = 2
 
@@ -198,13 +200,13 @@
             resize = () => this.init()
 
             drawGridLines = (width, color) => {
-                const w = width ? width: 2
+                const w = width || 2
                 const drawColumns = (start, end) => 
                     this.ctx.fillRect( start - w / 2, 0, w, this.canvas.height) || ( start < end && drawColumns( start+this.scale, end ) )
                 const drawRows = (start, end) => 
                     this.ctx.fillRect( 0, start - w / 2, this.canvas.width, w) || ( start < end && drawRows( start+this.scale, end ) )
 
-                this.ctx.fillStyle = color ? color: '#010101'
+                this.ctx.fillStyle = color || '#010101'
                 drawColumns(0, this.canvas.width)
                 drawRows(0, this.canvas.height)
             }
@@ -226,9 +228,11 @@
                 this.pauseHandler   = configs.pause
                 this.resumeHandler  = configs.resume
                 this.restartHandler = configs.restart
+                this.endedHandler   = configs.ended
                 this.endHandler     = configs.end
                 this.saveHandler    = configs.save
                 this.loadHandler    = configs.load
+                this.clearDataHandler = configs.clearData
             }
 
             init    = () => this.initHandler()
@@ -236,9 +240,11 @@
             pause   = () => this.pauseHandler()
             resume  = () => this.resumeHandler()
             restart = () => this.restartHandler()
-            isOver  = () => this.endHandler()
+            isOver  = () => this.endedHandler()
+            over  = () => this.endHandler()
             save    = () => this.saveHandler()
             load    = () => this.loadHandler()
+            clearData = () => this.clearDataHandler()
 
         }
         
@@ -250,14 +256,16 @@
                 this.ctx    = canvas.getContext('2d')
                 this.gap    = object.gap
                 this.color  = object.mainColor
+                this.eyeColor = object.eyeColor
                 this.spiritColor = object.spiritColor
 
                 this.name   = object.name
                 this.width  = object.width
                 this.height = object.height
 
-                this.body   = object.body ? object.body: []
-                this.cloneBody = object.cloneBody ? object.cloneBody: []
+                this.body   = object.body || []
+                this.cloneBody = []
+                this.lastDirection = null
             }
 
             spawn = (coordinates) => {
@@ -272,8 +280,7 @@
                     this.ctx.fill()
                     
                     this.ctx.beginPath()
-                    // TODO: make eyes color dynamic:
-                    this.ctx.fillStyle = '#111111' // snake eyes
+                    this.ctx.fillStyle = this.eyeColor // snake eyes
                     this.drawEyes(this.body[0], 9, 2)
                     this.ctx.fill()
                 } else if (string === 'path') {
@@ -357,14 +364,12 @@
                 this.choosePath(coordinates.x, coordinates.y, screenWidth, screenHeight)
             }
 
-            // TODO: fix illegal moves at @choosePath function
             choosePath = (x, y, screenWidth, screenHeight) => {
                 const head = this.cloneBody[0]
-                let newHead
-                let direction;
+                let newHead = null
 
                 // Determine the direction to move
-                direction = 
+                let direction = 
                     head.x < x ? 'right': 
                     head.x > x ? 'left': 
                     head.y < y ? 'down': 
@@ -373,6 +378,27 @@
 
                 if (!direction) return
 
+                if ( this.isBadDirection(head, direction) ) {
+
+                    // get bad directions
+                    const directions = ['left', 'up', 'right', 'down']
+                    const badDirections = [direction]
+                    for (let i = 0; i < directions.length; i++) 
+                        if ( !badDirections.includes(direction[i]) && this.isBadDirection(head, directions[i]) ) 
+                            badDirections.push(directions[i])
+
+                    // changes direction
+                    if ( badDirections.length < 4 )
+                        direction = this.changeDirection(badDirections)
+
+                    // checks if the direction is valid or not, and if it's invalid then changes it to another
+                    // it's just to make sure the snake doesn't choose an invalid direction when it has no way to move
+                    if ( this.isInvalidDirection(direction) )
+                        direction = this.changeDirection(direction)
+
+                }
+
+                //* apply direction
                 switch (direction) {
                     case 'right':
                         newHead = { x: head.x + this.width, y: head.y, direction };
@@ -390,19 +416,44 @@
                         return;
                 }
 
+                this.lastDirection = direction
+
                 newHead = this.reEnter(newHead, screenWidth, screenHeight)
 
                 this.cloneBody.unshift(newHead)
-                this.choosePath(x, y)
+                this.choosePath(x, y, screenWidth, screenHeight)
 
             }
 
+            isBadDirection = (head, direction) => 
+                ( direction === 'right' && this.body.some(part => part.x === this.reEnter(head.x + this.width) && part.y === head.y) ) || 
+                ( direction === 'left'  && this.body.some(part => part.x === this.reEnter(head.x - this.width) && part.y === head.y) ) || 
+                ( direction === 'down'  && this.body.some(part => part.y === this.reEnter(head.y + this.height) && part.x === head.x) ) || 
+                ( direction === 'up'    && this.body.some(part => part.y === this.reEnter(head.y - this.height) && part.x === head.x) ) || 
+                ( this.isInvalidDirection(direction) ) ? 
+                true: false
+
+            isInvalidDirection = (direction) => 
+                ( direction === 'right' && this.lastDirection === 'left' ) ||
+                ( direction === 'left' && this.lastDirection === 'right' ) ||
+                ( direction === 'down' && this.lastDirection === 'up' ) ||
+                ( direction === 'up' && this.lastDirection === 'down' )
+
+            changeDirection = (dirs) => {
+                let directions = ['left', 'up', 'right', 'down']
+                if (Array.isArray(dirs))
+                    dirs.forEach( direction => directions.splice( directions.indexOf(direction), 1 ) )
+                else directions.splice( directions.indexOf(dirs), 1 )
+                return directions[ ~~( Math.random() * directions.length ) ]
+            }
+
             reEnter = (bodyPart, screenWidth, screenHeight) => {
-                if (bodyPart.x > screenWidth - this.width) bodyPart.x = 0
-                else if (bodyPart.x < 0) bodyPart.x = screenWidth - this.width
-                else if (bodyPart.y > screenHeight - this.height) bodyPart.y = 0
-                else if (bodyPart.y < 0) bodyPart.y = screenHeight - this.height
-                return bodyPart
+                let part = bodyPart
+                if (part.x > screenWidth - this.width) part.x = 0
+                else if (part.x < 0) part.x = screenWidth - this.width
+                else if (part.y > screenHeight - this.height) part.y = 0
+                else if (part.y < 0) part.y = screenHeight - this.height
+                return part
             }
 
             takeStep = () => {
@@ -435,7 +486,6 @@
                     default:
                         return
                 }
-                newPart = this.reEnter(newPart, screenWidth, screenHeight)
                 this.body.push(newPart)
             }
 
@@ -453,9 +503,10 @@
                 return false
             }
 
-            die = () => {}
-
-            respawn = () => spawn()
+            die = () => {
+                this.body   = []
+                this.cloneBody = []
+            }
 
             getBody = () => this.body
 
@@ -466,9 +517,9 @@
                 width: this.width, 
                 height: this.height, 
                 mainColor: this.color, 
+                eyeColor: object.eyeColor, 
                 spiritColor: this.spiritColor, 
-                body: this.body, 
-                cloneBody: this.cloneBody
+                body: this.body
             })
 
         }
@@ -534,6 +585,8 @@
             const scale = 50
             const fps = 10
             const canvas = document.querySelector('#canvas')
+            const width = window.innerWidth
+            const height = window.innerHeight
             const random = (min, max, invalidNumbers) => {
                 const randomNumber = Math.floor( Math.random() * (max+1 - min) + min )
                 return invalidNumbers && invalidNumbers.includes(randomNumber) ? random(min, max, invalidNumbers): randomNumber
@@ -546,19 +599,20 @@
                 return { x: x * scale, y: y * scale }
             }
 
-            const screen = new Screen({ canvas, scale, fps })
+            const screen = new Screen({ canvas, scale, fps, width, height })
             window.addEventListener('resize', screen.resize)
 
             // Snake game
             const configs = {
                 processInterval: setInterval(() => {}), 
                 snake: new Snake({
-                    name: '\'Wiggles\'', 
+                    name: 'Wiggles', 
                     canvasId: canvas.id, 
                     gap: 2, 
                     width: scale, 
                     height: scale, 
                     mainColor: '#FF7700', 
+                    eyeColor: '#111111', 
                     spiritColor: '#AAAAAa22'
                 }), 
                 food: new Food({
@@ -568,6 +622,7 @@
                     width: scale, 
                     height: scale
                 }), 
+                ended: null, 
 
                 init: () => {
 
@@ -578,10 +633,11 @@
                 }, 
 
                 start: () => {
+                    configs.ended = false
                     // spawn snake
-                    configs.snake.spawn(randomCoordinates( [] ))
+                    configs.snake.spawn( randomCoordinates([]) )
                     // spawn food
-                    configs.food.spawn(randomCoordinates( configs.snake.getBody() ))
+                    configs.food.spawn( randomCoordinates( configs.snake.getBody() ) )
                     // snake start moving to get the food
                     configs.snake.moveTo(
                         configs.food.getCoordinates(), 
@@ -596,9 +652,8 @@
                     screen.clear()
                     screen.drawGridLines()
 
-                    if ( configs.snake.bitItself() ) {
-                        configs.end()
-                    }
+                    if ( configs.snake.bitItself() ) 
+                        return configs.end()
 
                     if ( configs.snake.hasGetFood( configs.food.getCoordinates() ) ) {
 
@@ -619,9 +674,13 @@
                     configs.snake.draw('snake')
 
                 }, (1000 / screen.getFPS()) ), 
-                
+
                 end: () => {
+                    configs.pause()
+                    alert(`${ configs.snake.name } died of its own bite, Score: ${ configs.snake.getBody().length }`)
                     configs.snake.die()
+                    configs.restart()
+                    configs.ended = true
                 }, 
 
                 pause: () => {
@@ -629,12 +688,13 @@
                 }, 
 
                 resume: () => {
-                    configs.process()
+                    if (configs.ended) 
+                        configs.restart()
+                    else configs.process()
                 }, 
 
                 restart: () => {
-                    configs.pause()
-                    configs.init()
+                    configs.clearData()
                     configs.start()
                 }, 
 
@@ -653,7 +713,7 @@
                         if (!info) return
                         // TODO: FIX
                         if ( info.snake.body.length > 20 ) {
-                            localStorage.removeItem('snake-game')
+                            configs.clearData()
                             return
                         }
 
@@ -661,10 +721,12 @@
                         configs.food = new Food(info.food)
 
                     } catch (err) {
-                        localStorage.removeItem('snake-game')
+                        configs.clearData()
                         console.error(err)
                     }
                 }, 
+
+                clearData: () => localStorage.removeItem('snake-game')
 
                 // update: () => {}, 
             }
@@ -681,7 +743,6 @@
 
             let stopped = false
             window.addEventListener('keydown', e => {
-                console.log(e.which)
                 if (e.which === 32 || e.which === 27) 
                     pauseHandler()
             })
