@@ -1,0 +1,149 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+} *::before, *::after {
+    display: inline-block;
+    font: normal normal normal 14px/1 FontAwesome;
+    font-size: inherit;
+    text-rendering: auto;
+    -webkit-font-smoothing: antialiased;
+} :root {
+    font-size: 62.5%;
+} body {
+    font-family:
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Oxygen,
+        Ubuntu,
+        Cantarell,
+        "Open Sans",
+        "Helvetica Neue",
+        sans-serif;
+    width: 100%;
+    height: 100vh;
+    background: #111111;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+#wrapper {
+    top: 0;
+    left: 0;
+    position: fixed;
+    width: 100vw;
+    height: 100vh;
+    z-index: 99999;
+    opacity: 0;
+    visibility: hidden;
+    background: #11111177;
+    transition: 200ms;
+} #wrapper.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+canvas {
+    margin: 0 auto;
+    padding: 0;
+}
+
+a, button {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent !important;
+}
+
+/* preloader */
+
+.preload {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    color: #ffffff;
+    width: 100vw;
+    height: 125vh;
+    margin: 0;
+    padding: 0;
+    z-index: 9999;
+    font-size: 8vh;
+    background: #111111;
+    transition: 0.5s;
+    letter-spacing: 0.8rem;
+} .preload.loaded {
+    opacity: 0;
+    visibility: hidden;
+} .preload span {
+    height: 50vh;
+    opacity: 0;
+    display: inline-block;
+    transform: rotateX(-90deg);
+    text-align: center;
+    text-transform: uppercase;
+} .let {
+    animation: drop 3s ease-in-out infinite;
+} .let1 {
+    animation-delay: 1.2s;
+} .let2 {
+    animation-delay: 1.3s;
+} .let3 {
+    animation-delay: 1.4s;
+} .let4 {
+    animation-delay: 1.5s;
+} .let5 {
+    animation-delay: 1.6s;
+} .let6 {
+    animation-delay: 1.7s;
+} .let7 {
+    animation-delay: 1.8s;
+} .preload.loaded span {
+    animation: none;
+} @keyframes drop {
+    10% {
+        opacity: 0.5;
+    } 20% {
+        opacity: 1;
+        top: 3.78rem;
+        transform: rotateX(-360deg);
+    } 80% {
+        opacity: 1;
+        top: 3.78rem;
+        transform: rotateX(-360deg);
+    } 90% {
+        opacity: 0.5;
+    } 100% {
+        opacity: 0;
+        top: 6.94rem;
+    }
+}
+
+/* preload end */
+
+
+@media (max-width: 767.98px) {
+    body {
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+    }
+    canvas {
+        height: auto;
+        max-height: 100vh;
+        border-top: 1px solid #fff4;
+        border-bottom: 1px solid #fff4;
+    }
+}
