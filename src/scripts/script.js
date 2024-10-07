@@ -6,16 +6,8 @@ import { Snake, Food } from './smart-snake.js'
 (function main() {
 
 
-    // define variables
+    // utils
     const select = (el, all=1) => all ? document.querySelectorAll(el): document.querySelector(el)
-    const scale = 50
-    const fps = 10
-    const canvas = document.querySelector('#canvas')
-
-    const canvasWrapper = select('#convas__wrapper', 0)
-    const width = canvasWrapper.innerWidth
-    const height = canvasWrapper.innerHeight
-
     const random = (min, max, invalidNumbers) => {
         const randomNumber = Math.floor( Math.random() * (max+1 - min) + min )
         return invalidNumbers && invalidNumbers.includes(randomNumber) ? random(min, max, invalidNumbers): randomNumber
@@ -28,10 +20,18 @@ import { Snake, Food } from './smart-snake.js'
         return { x: x * scale, y: y * scale }
     }
 
-    const screen = new Screen({ canvas, scale, fps, width, height })
-    window.addEventListener('resize', screen.resize)
+    // define variables
+    const scale = 50
+    const fps = 10
+    const canvas = document.querySelector('#canvas')
 
-    // Snake game
+    const canvasWrapper = select('#convas__wrapper', 0)
+    const width = canvasWrapper.innerWidth
+    const height = canvasWrapper.innerHeight
+
+    const screen = new Screen({ canvas, scale, fps, width, height })
+
+    // snake game
     const configs = {
         processInterval: setInterval(() => {}), 
         snake: new Snake({
@@ -160,15 +160,18 @@ import { Snake, Food } from './smart-snake.js'
         // update: () => {}, 
     }
 
-    // Game handling
+    // game handling
     const game = new Game(configs)
-    game.load()
     game.init()
+    game.load()
     game.start()
     // game.pause()
     // game.resume()
     // game.isOver()
     // game.restart()
+
+    // event handlers: 
+    window.addEventListener('resize', screen.resize)
 
     // to pause/resume the game
     let stopped = false

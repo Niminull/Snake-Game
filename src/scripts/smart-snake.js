@@ -28,7 +28,7 @@ export class Snake {
             this.ctx.beginPath()
             this.drawPart(this.body, 0, 4, true)
             this.ctx.fill()
-            
+
             this.ctx.beginPath()
             this.ctx.fillStyle = this.eyeColor // snake eyes
             this.drawEyes(this.body[0], 9, 2)
